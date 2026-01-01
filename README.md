@@ -55,7 +55,7 @@ Test LDAP connectivity:
 ldapsearch -x -LLL -H ldap://localhost -b "dc=test,dc=lan"
 ```
 4️⃣ Clone the Backend
-git clone https://github.com/YOUR_GITHUB/fastapi-backend.git
+git clone https://github.com/LatchCore/server.git
 cd fastapi-backend
 
 5️⃣ Set Up Python Environment
