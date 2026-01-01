@@ -82,9 +82,9 @@ LDAP_BASE_DN – LDAP domain components, e.g., dc=test,dc=lan
 ## 7️⃣ Test Backend
 
 Run FastAPI:
-
+```
 uvicorn main:app --host 0.0.0.0 --port 8000
-
+```
 
 Test with curl (replace values with your test user):
 ```
