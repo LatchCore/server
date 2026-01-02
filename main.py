@@ -7,9 +7,9 @@ app = FastAPI()
 
 # LDAP config
 LDAP_SERVER = "ldap://127.0.0.1"
-BASE_DN = "dc=domain,dc=tld" # add your domain and tld
+BASE_DN = "dc=test,dc=lan"
 ADMIN_DN = "cn=admin,dc=test,dc=lan"
-ADMIN_PASSWORD = "ldap-admin-password"  # change to your admin password
+ADMIN_PASSWORD = "HiHi123H"  # change to your admin password
 
 # Request model
 class LoginRequest(BaseModel):
@@ -17,13 +17,20 @@ class LoginRequest(BaseModel):
     password: str
     agent_id: str = None
 
-# Check user exists in LDAP
-def ldap_user_exists(username: str) -> bool:
+# Check user exists and return full name
+def ldap_get_user_fullname(username: str) -> str:
     conn = ldap.initialize(LDAP_SERVER)
     conn.simple_bind_s(ADMIN_DN, ADMIN_PASSWORD)
-    result = conn.search_s(BASE_DN, ldap.SCOPE_SUBTREE, f"(uid={username})")
+    
+    # Search for user
+    result = conn.search_s(BASE_DN, ldap.SCOPE_SUBTREE, f"(uid={username})", ['cn'])
     conn.unbind_s()
-    return len(result) > 0
+    
+    if len(result) == 0:
+        return None
+    # result[0][1] contains the attributes dictionary, 'cn' is a list
+    full_name = result[0][1].get('cn', [b""])[0].decode("utf-8")
+    return full_name
 
 # Authenticate with Kerberos
 def kerberos_auth(username: str, password: str) -> bool:
@@ -38,8 +45,15 @@ def kerberos_auth(username: str, password: str) -> bool:
 # Login endpoint
 @app.post("/auth/login")
 def login(request: LoginRequest):
-    if not ldap_user_exists(request.username):
+    full_name = ldap_get_user_fullname(request.username)
+    if not full_name:
         raise HTTPException(status_code=404, detail="User not found")
+    
     if not kerberos_auth(request.username, request.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"status": "ok"}
+    
+    return {
+        "status": "ok",
+        "full_name": full_name,
+        "agent_id": request.agent_id
+    }
